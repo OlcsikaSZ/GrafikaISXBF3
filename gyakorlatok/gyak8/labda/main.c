@@ -1,111 +1,79 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <stdbool.h>
-#include <math.h>
+#include <stdio.h>
 
-#define WINDOW_WIDTH 800
-#define WINDOW_HEIGHT 600
-#define GRAVITY 1000.0f // pixel/sec^2
-#define BALL_RADIUS 20
+#define WIDTH 800
+#define HEIGHT 600
+#define BALL_RADIUS 32
+#define GRAVITY 980.0
+#define TIME_STEP 0.016
+#define DAMPING 0.8
+#define INITIAL_Y 100.0
 
 typedef struct {
-    float x, y;
-    float vy;
-    bool ideal;
+    double y;
+    double v;
 } Ball;
 
-void reset_ball(Ball* ball) {
-    ball->x = WINDOW_WIDTH / 2;
-    ball->y = BALL_RADIUS;
-    ball->vy = 0;
-}
+void simulate(Ball *ball, bool ideal) {
+    ball->v += GRAVITY * TIME_STEP;
+    ball->y += ball->v * TIME_STEP;
 
-void draw_circle(SDL_Renderer* renderer, int32_t centreX, int32_t centreY, int32_t radius) {
-    for (int w = 0; w < radius * 2; w++) {
-        for (int h = 0; h < radius * 2; h++) {
-            int dx = radius - w;
-            int dy = radius - h;
-            if ((dx*dx + dy*dy) <= (radius * radius)) {
-                SDL_RenderDrawPoint(renderer, centreX + dx, centreY + dy);
-            }
-        }
+    if (ball->y >= HEIGHT - BALL_RADIUS) {
+        ball->y = HEIGHT - BALL_RADIUS;
+        ball->v = -(ideal ? ball->v : ball->v * DAMPING);
     }
 }
 
-int main(int argc, char* argv[]) {
-    SDL_Init(SDL_INIT_VIDEO);
-    SDL_Window* window = SDL_CreateWindow("Pattogó labda", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                                          WINDOW_WIDTH, WINDOW_HEIGHT, 0);
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+int main(int argc, char *argv[]) {
+    if (SDL_Init(SDL_INIT_VIDEO) != 0 || IMG_Init(IMG_INIT_PNG) != IMG_INIT_PNG) {
+        fprintf(stderr, "SDL init error: %s\n", SDL_GetError());
+        return 1;
+    }
 
-    bool running = true;
+    SDL_Window *window = SDL_CreateWindow("Pattogó labda",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, WIDTH, HEIGHT, 0);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+
+    SDL_Surface *image = IMG_Load("ball.png");
+    if (!image) {
+        fprintf(stderr, "Nem sikerült betölteni a képet: %s\n", IMG_GetError());
+        return 1;
+    }
+    SDL_Texture *ball_texture = SDL_CreateTextureFromSurface(renderer, image);
+    SDL_FreeSurface(image);
+
+    Ball ball = { .y = INITIAL_Y, .v = 0.0 };
+    bool quit = false, ideal = false;
     SDL_Event event;
 
-    Ball ball = {0};
-    reset_ball(&ball);
-    ball.ideal = false; // <-- ide állítsd: true = ideális, false = nem ideális
-
-    Uint32 last_time = SDL_GetTicks();
-
-    while (running) {
-        // Idő delta számítás
-        Uint32 now = SDL_GetTicks();
-        float dt = (now - last_time) / 1000.0f;
-        last_time = now;
-
-        // Eseménykezelés
+    while (!quit) {
         while (SDL_PollEvent(&event)) {
             if (event.type == SDL_QUIT)
-                running = false;
-
-            // Szóközre váltás ideális és nem ideális mód között
-            if (event.type == SDL_KEYDOWN && event.key.keysym.sym == SDLK_SPACE) {
-                ball.ideal = !ball.ideal;
-                reset_ball(&ball);
+                quit = true;
+            if (event.type == SDL_KEYDOWN) {
+                if (event.key.keysym.sym == SDLK_SPACE)
+                    ideal = !ideal;
             }
         }
 
-        // Gravitációs gyorsulás
-        ball.vy += GRAVITY * dt;
-        ball.y += ball.vy * dt;
+        simulate(&ball, ideal);
 
-        float floor_y = WINDOW_HEIGHT - BALL_RADIUS;
-
-        // Ütközés
-        if (ball.y >= floor_y) {
-            ball.y = floor_y;
-            if (ball.ideal) {
-                ball.vy = -sqrtf(2 * GRAVITY * (floor_y - BALL_RADIUS));
-            } else {
-                ball.vy = -ball.vy * 0.7f; // csillapítás
-                if (fabs(ball.vy) < 30.0f) {
-                    ball.vy = 0;
-                }
-            }
-        }
-
-        // Rajzolás
-        SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
-        draw_circle(renderer, (int)ball.x, (int)ball.y, BALL_RADIUS);
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
         SDL_RenderClear(renderer);
 
-        SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
-        SDL_Rect ball_rect = {
-            (int)(ball.x - BALL_RADIUS),
-            (int)(ball.y - BALL_RADIUS),
-            BALL_RADIUS * 2,
-            BALL_RADIUS * 2
-        };
-        SDL_RenderFillRect(renderer, &ball_rect);
-
-        // Info szöveg megjelenítéséhez szükség lenne SDL_ttf-re, de most csak kommentbe írjuk:
-        // "Space: ideális / nem ideális váltás"
+        SDL_Rect dst = {WIDTH / 2 - BALL_RADIUS, (int)(ball.y - BALL_RADIUS), BALL_RADIUS * 2, BALL_RADIUS * 2};
+        SDL_RenderCopy(renderer, ball_texture, NULL, &dst);
 
         SDL_RenderPresent(renderer);
-        SDL_Delay(16);
+        SDL_Delay((int)(TIME_STEP * 1000));
     }
 
+    SDL_DestroyTexture(ball_texture);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
+    IMG_Quit();
     SDL_Quit();
     return 0;
 }
