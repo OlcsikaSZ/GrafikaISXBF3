@@ -32,15 +32,6 @@ Ez a projekt egy **C nyelven** írt *3D-s alkalmazás*, amely a Naprendszer mode
 
 ---
 
-## 🛠️ Jövőbeli Fejlesztési Tervek
-
-- ✅ **Bolygók kiegészítése** – Minden égitest beillesztése.
-- ✅ **Pályaszámítások fejlesztése** – Reálisabb bolygómozgások.
-- ✅ **Grafikai fejlesztések** – Fényhatások, részletesebb textúrák.
-- ✅ **Interaktivitás növelése** – Kamera mozgatása, zoom, információs panelek.
-
----
-
 ## 🏗️ Fordítás és Futtatás
 
 A program fordítása és futtatása:
