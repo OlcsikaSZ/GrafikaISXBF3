@@ -6,11 +6,14 @@ Ez a projekt egy **C nyelven** írt *3D-s alkalmazás*, amely a Naprendszer mode
 
 ---
 
-## 🔧 Jelenlegi állapot:
+## ✨ Fő Funkciók
 
-- A fejlesztés kezdeti szakaszában van.
-- Egyes bolygók még hiányoznak.
-- A mozgásmodellek és a vizuális megjelenítés további finomításra szorulnak.
+- 🌍 **A Föld forgása** saját tengelye körül és keringése a Nap körül.
+- 🌕 **A Hold** pályán mozog a Föld körül.
+- ☀️ **A Nap forgatható**, és központi világító objektumként szolgál.
+- 🚀 **Űrhajó vezérlés**: egy billentyű lenyomásával irányítható űrhajó indul.
+- 🎥 **Kamera vezérlés**: forgatás, zoom, mozgás – teljes interaktivitás.
+- 💡 **Állítható fényerő**: a megvilágítás intenzitása dinamikusan szabályozható.
 
 ---
 
